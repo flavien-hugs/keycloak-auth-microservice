@@ -2,7 +2,7 @@ from fastapi import Security, HTTPException, Depends, Body
 
 from src.services import router_factory
 from src.services.auth import schema
-from src.services.commun import deps
+from src.commun import deps
 
 from keycloak import KeycloakAdmin, exceptions
 
@@ -15,7 +15,7 @@ router = router_factory(
 
 @router.get("/@ping")
 def ping():
-    return {"msg": "healthy"}
+    return {"msg": "pong !"}
 
 
 @router.post("/login", summary="Login")
