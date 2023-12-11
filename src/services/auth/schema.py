@@ -29,11 +29,7 @@ class UpdateRoleSchema(BaseRoleSchema):
     ...
 
 
-class RoleSchemaOut(BaseRoleSchema):
-    id: str
-
-
-class GroupSchema(BaseModel):
+class GroupSchemaBase(BaseModel):
     name: str
     subgroups: Optional[list] = []
 

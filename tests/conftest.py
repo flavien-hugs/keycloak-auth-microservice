@@ -10,7 +10,7 @@ def mock_get_keycloak_openid():
         mock_instance = mock_keycloak_openid.return_value
         mock_instance.decode_token.return_value = {
             "sub": "0123456789",
-            "username": "fofo"
+            "username": "fofo",
         }
         yield mock_instance
 
@@ -28,5 +28,6 @@ def authorization(mock_get_keycloak_openid):
 @pytest.fixture()
 def http_client_auth():
     from src.services.auth import app
+
     client = TestClient(app)
     return client

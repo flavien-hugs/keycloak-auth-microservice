@@ -72,7 +72,9 @@ def test_user_login_failure(mock_keycloak_openid_conn):
 
 @pytest.mark.asyncio
 @mock.patch("src.utils.deps.KeycloakOpenID")
-async def test_authorization_bearer_valid_token(mock_keycloak_openid_conn, mock_request):
+async def test_authorization_bearer_valid_token(
+    mock_keycloak_openid_conn, mock_request
+):
     from src.utils.deps import AuthTokenBearer
 
     mock_auth = mock.Mock()
@@ -94,7 +96,9 @@ async def test_authorization_bearer_valid_token(mock_keycloak_openid_conn, mock_
 
 @pytest.mark.asyncio
 @mock.patch("src.utils.deps.KeycloakOpenID")
-async def test_authorization_bearer_expired_token(mock_keycloak_openid_conn, mock_request):
+async def test_authorization_bearer_expired_token(
+    mock_keycloak_openid_conn, mock_request
+):
     from src.utils.deps import AuthTokenBearer
 
     mock_auth = mock.MagicMock()
@@ -115,4 +119,6 @@ async def test_authorization_bearer_expired_token(mock_keycloak_openid_conn, moc
     assert context.value.detail == "The access token is expired"
 
     mock_keycloak_openid_conn.assert_called_once()
-    mock_keycloak_openid_conn.return_value.introspect.assert_called_once_with(f"{mock_token}")
+    mock_keycloak_openid_conn.return_value.introspect.assert_called_once_with(
+        f"{mock_token}"
+    )
