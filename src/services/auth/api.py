@@ -19,10 +19,7 @@ def ping():
 
 
 @router.post("/login", summary="Login")
-def login(
-    payload: schema.LoginModel,
-    keycloak_admin: KeycloakAdmin = Depends(deps.get_keycloak_admin),
-):
+def login(payload: schema.LoginModel):
     ret = deps.user_login(payload.username, payload.password)
     return ret
 
@@ -74,11 +71,9 @@ async def get_users():
     dependencies=[Security(deps.get_current_user)],
     summary="Delete User",
 )
-async def delete_user(
-    user_id: str, keycloak_admin: KeycloakAdmin = Depends(deps.get_keycloak_admin)
-):
+async def delete_user(user_id: str):
     try:
-        response = keycloak_admin.delete_user(user_id=user_id)
+        response = deps.get_keycloak_admin().delete_user(user_id=user_id)
     except exceptions.KeycloakDeleteError as err:
         raise HTTPException(status_code=err.response_code, detail=str(err)) from err
     return response
@@ -357,3 +352,8 @@ async def delete_role(
     except exceptions.KeycloakDeleteError as err:
         raise HTTPException(status_code=err.response_code, detail=str(err)) from err
     return response
+
+
+@router.post("/logout", dependencies=[Depends(deps.get_current_user)])
+async def logout_user(payload: schema.LogoutUser):
+    return deps.user_logout(payload.refresh_token)

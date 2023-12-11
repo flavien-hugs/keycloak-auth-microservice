@@ -36,3 +36,7 @@ class RoleSchemaOut(BaseRoleSchema):
 class GroupSchema(BaseModel):
     name: str
     subgroups: Optional[list] = []
+
+
+class LogoutUser(BaseModel):
+    refresh_token: str
