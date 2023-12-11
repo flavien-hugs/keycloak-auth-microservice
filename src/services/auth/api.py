@@ -2,7 +2,7 @@ from fastapi import Security, HTTPException, Depends, Body
 
 from src.services import router_factory
 from src.services.auth import schema
-from src.commun import deps
+from src.utils import deps
 
 from keycloak import KeycloakAdmin, exceptions
 
@@ -28,24 +28,22 @@ def login(
 
 
 @router.post("/users", summary="Create new user")
-async def create_user(
-    user: schema.AuthModel,
-    keycloak_admin: KeycloakAdmin = Depends(deps.get_keycloak_admin),
-):
+async def create_user(data: schema.AuthModel = Body()):
     try:
         payload = {
-            "username": user.username,
-            "firstName": user.firstname,
-            "lastName": user.lastname,
+            "username": data.username,
+            "firstName": data.firstname,
+            "lastName": data.lastname,
             "enabled": True,
             "emailVerified": True,
-            "credentials": [{"type": "password", "value": user.password}],
-            "attributes": {"locale": ["fr"], "loan_users": True},
+            "credentials": [{"type": "password", "value": data.password}],
+            "attributes": {"locale": ["fr"]},
         }
+        keycloak_admin = deps.get_keycloak_admin()
         new_user = keycloak_admin.create_user(payload, exist_ok=False)
         response = keycloak_admin.get_user(new_user)
     except exceptions.KeycloakPostError as err:
-        raise HTTPException(status_code=400, detail=str(err)) from err
+        raise HTTPException(status_code=err.response_code, detail=str(err)) from err
     return response
 
 
@@ -54,12 +52,9 @@ async def create_user(
     dependencies=[Security(deps.get_current_user)],
     summary="Get Single User",
 )
-async def get_user(
-    user_id: str,
-    keycloak_admin: KeycloakAdmin = Depends(deps.get_keycloak_admin),
-):
+async def get_user(user_id: str):
     try:
-        user = keycloak_admin.get_user(user_id)
+        user = deps.get_keycloak_admin().get_user(user_id)
     except exceptions.KeycloakGetError as err:
         raise HTTPException(status_code=err.response_code, detail=str(err)) from err
     return user
@@ -68,9 +63,9 @@ async def get_user(
 @router.get(
     "/users", dependencies=[Security(deps.get_current_user)], summary="Get all users"
 )
-async def get_users(keycloak_admin: KeycloakAdmin = Depends(deps.get_keycloak_admin)):
-    users = keycloak_admin.get_users({})
-    data = [user for user in users if "loan_users" in user.get("attributes", {})]
+async def get_users():
+    users = deps.get_keycloak_admin().get_users({})
+    data = [user for user in users]
     return data
 
 
