@@ -773,7 +773,7 @@ def test_delete_role_failure(http_client_auth, authorization, mocker):
     assert response.json() == {"detail": "404: Role not Found"}
 
 
-def test_logout_user_success(http_client_auth, authorization, mocker):
+def test_logout_user(http_client_auth, authorization, mocker):
     mock_keycloak_logout = mocker.patch("src.utils.deps.user_logout")
     mock_keycloak_logout.return_value = {"message": "Logout successful"}
 
