@@ -12,3 +12,11 @@ help:	## Show this help
 .PHONY: run
 run: ## Run service
 	poetry run app auth runserver
+
+.PHONY: tests
+tests: ## Execute test
+	poetry run coverage run -m pytest -v tests
+
+.PHONY: coverage
+coverage: ## Execute coverage
+	poetry run coverage report -m
