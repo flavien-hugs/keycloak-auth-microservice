@@ -53,7 +53,7 @@ Execute the following commands to run tests and check code coverage:
 | GET `/api/auth/users`     | Get all users |
 | GET `/api/auth/users/{user_id}`| Get user profile information   |
 | DELETE `/api/auth/users/{user_id}`| Delete user   |
-| PATCH `/api/auth/users/{user_id}`| Update user   |
+| PATCH `/api/auth/users/{user_id}`| Update user information   |
 
 Feel free to explore and extend the functionality by adding more routes and features to suit your authentication needs.
 
