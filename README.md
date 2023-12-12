@@ -12,35 +12,34 @@ It leverages the power of Keycloak for secure and robust authentication.
 To run the project locally, follow these steps:
 
 1. Activate environment
-   ```shell
-   poetry shell
-   ```
+```shell
+poetry shell
+```
 
 2. Install dependencies
-   ```shell
-   poetry install
-   ```
+```shell
+poetry install
+```
 
 3. Run the server
-   ```shell
-   poetry run app auth runserver
-   or app auth runserver
-   or make run
-   ```
+```shell
+poetry run app auth runserver
+or app auth runserver
+or make run
+```
 
 ## Run tests
 Execute the following commands to run tests and check code coverage:
 
 1. Run tests
-   ```shell
-   poetry run coverage run -m pytest -v tests
-   ```
+```shell
+poetry run coverage run -m pytest -v tests
+```
 
 2. Check code test coverage
-
-   ```shell
-   poetry run coverage report -m
-   ```
+```shell
+poetry run coverage report -m
+```
 
 # Routes
 
