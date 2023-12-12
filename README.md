@@ -47,7 +47,7 @@ poetry run coverage report -m
 |-----------------------|--------------------------------|
 | GET `/api/auth/@ping`     | Test if server running         |
 | POST `/api/auth/create`    | Register a new user            |
-| POSt `/api/auth/login`     | Authenticate and obtain a token|
+| POST `/api/auth/login`     | Authenticate and obtain a token|
 | POSt `/api/auth/logout`     | Logout the currently authenticated user |
 | GET `/api/auth/users`     | Get all users |
 | GET `/api/auth/users/{user_id}`| Get user profile information   |
