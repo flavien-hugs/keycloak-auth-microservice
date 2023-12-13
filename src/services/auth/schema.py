@@ -1,10 +1,11 @@
 from typing import Optional
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
 
 
 class AuthModel(BaseModel):
     username: str
     password: str
+    email: Optional[EmailStr] = None
     firstname: Optional[str] = None
     lastname: Optional[str] = None
 

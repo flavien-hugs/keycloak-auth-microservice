@@ -31,6 +31,7 @@ async def create_user(data: schema.AuthModel = Body(...)):
             "username": data.username,
             "firstName": data.firstname,
             "lastName": data.lastname,
+            "email": data.email,
             "enabled": True,
             "emailVerified": True,
             "credentials": [{"type": "password", "value": data.password}],
