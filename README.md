@@ -43,16 +43,11 @@ poetry run coverage report -m
 
 # Routes
 
-| Endpoint              | Description                    |
-|-----------------------|--------------------------------|
-| GET `/api/auth/@ping`     | Test if server running |
-| POST `/api/auth/login`    | Authenticate and obtain a token |
-| GET `/api/auth/users`     | Get all users |
-| POST `/api/auth/users`    | Create new user |
-| POSt `/api/auth/logout`   | Logout the currently authenticated user |
-| GET `/api/auth/users/{user_id}`| Get user profile information |
-| DELETE `/api/auth/users/{user_id}`| Delete user |
-| PATCH `/api/auth/users/{user_id}`| Update user information |
+<video controls>
+  <source src="docs/keycloak-demo-endpoint.webm" type="video/webm">
+  Votre navigateur ne prend pas en charge la balise vidéo.
+</video>
+
 
 Feel free to explore and extend the functionality by adding more routes and features to suit your authentication needs.
 
