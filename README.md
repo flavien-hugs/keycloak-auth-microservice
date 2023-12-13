@@ -43,11 +43,7 @@ poetry run coverage report -m
 
 # Routes
 
-<video controls>
-  <source src="docs/keycloak-demo-endpoint.webm" type="video/webm">
-  Votre navigateur ne prend pas en charge la balise vidéo.
-</video>
-
+[![docs/keycloak-demo-endpoint.webm](docs/screenshort-docs-api.png)](docs/keycloak-demo-endpoint.webm)
 
 Feel free to explore and extend the functionality by adding more routes and features to suit your authentication needs.
 
