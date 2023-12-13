@@ -45,6 +45,7 @@ def test_create_user_success(http_client_auth, mocker):
         "username": "john",
         "firstname": "John",
         "lastname": "Doe",
+        "email": "flavienhugs@pm.me",
         "password": "password",
     }
 
@@ -55,6 +56,7 @@ def test_create_user_success(http_client_auth, mocker):
             "username": "john",
             "firstName": "John",
             "lastName": "Doe",
+            "email": "flavienhugs@pm.me",
             "enabled": True,
             "emailVerified": True,
             "credentials": [{"type": "password", "value": "password"}],
@@ -76,6 +78,7 @@ def test_create_user_failure(http_client_auth, mocker):
         "username": "john",
         "firstname": "John",
         "lastname": "Doe",
+        "email": "flavienhugs@pm.me",
         "password": "password",
     }
 
@@ -93,6 +96,7 @@ def test_create_user_failure(http_client_auth, mocker):
             "username": "john",
             "firstName": "John",
             "lastName": "Doe",
+            "email": "flavienhugs@pm.me",
             "enabled": True,
             "emailVerified": True,
             "credentials": [{"type": "password", "value": "password"}],
@@ -134,10 +138,107 @@ def test_get_user_failure(http_client_auth, authorization, mocker):
 
     response = http_client_auth.get("/api/auth/users/0123", headers=authorization)
 
+    mock_keycloak_instance.get_user.assert_called_once_with("0123")
+    mock_keycloak_instance.get_user.assert_called_once()
+
     assert response.status_code == status.HTTP_404_NOT_FOUND
     assert response.json() == {"detail": "404: User not found"}
 
-    mock_keycloak_instance.get_user.assert_called_once_with("0123")
+
+def test_update_user_success(http_client_auth, authorization, mocker):
+    mock_keycloak_admin = mocker.patch("src.utils.deps.get_keycloak_admin")
+    mock_keycloak_instance = mock_keycloak_admin.return_value
+
+    payload = {"lastname": "Wick", "firstname": "Hugs", "email": "flavien@pm.me"}
+
+    user_id = "0123456"
+    response = http_client_auth.patch(
+        f"/api/auth/users/{user_id}", json=payload, headers=authorization
+    )
+
+    mock_keycloak_instance.update_user.assert_called_once_with(
+        user_id=user_id,
+        payload={
+            "lastName": payload["lastname"],
+            "firstName": payload["firstname"],
+            "email": payload["email"]
+        },
+    )
+    mock_keycloak_instance.update_user.assert_called_once()
+    assert response.status_code == status.HTTP_200_OK
+
+
+def test_update_user_failure(http_client_auth, authorization, mocker):
+    mock_keycloak_admin = mocker.patch("src.utils.deps.get_keycloak_admin")
+    mock_keycloak_instance = mock_keycloak_admin.return_value
+
+    mock_keycloak_instance.update_user.side_effect = exceptions.KeycloakPutError(
+        response_code=status.HTTP_400_BAD_REQUEST, error_message="User update failed"
+    )
+
+    user_id = "0123456"
+    payload = {"lastname": "Wick", "firstname": "Hugs", "email": "flavien@pm.me"}
+
+    response = http_client_auth.patch(
+        f"/api/auth/users/{user_id}", json=payload, headers=authorization
+    )
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+    assert response.json() == {"detail": "400: User update failed"}
+
+    mock_keycloak_instance.update_user.assert_called_once_with(
+        user_id=user_id,
+        payload={
+            "lastName": payload["lastname"],
+            "firstName": payload["firstname"],
+            "email": payload["email"]
+        }
+    )
+    mock_keycloak_instance.get_user.assert_not_called()
+
+
+def test_update_user_passwaord_success(http_client_auth, authorization, mocker):
+    mock_keycloak_admin = mocker.patch("src.utils.deps.get_keycloak_admin")
+    mock_keycloak_instance = mock_keycloak_admin.return_value
+
+    payload = {"password": "change-password"}
+
+    user_id = "0123456"
+    response = http_client_auth.put(
+        f"/api/auth/change-password/{user_id}", json=payload, headers=authorization
+    )
+
+    mock_keycloak_instance.set_user_password.assert_called_once_with(
+        user_id=user_id,
+        password=payload["password"],
+        temporary=True
+    )
+    mock_keycloak_instance.set_user_password.assert_called_once()
+    assert response.status_code == status.HTTP_200_OK
+
+
+def test_update_user_passwaord_failure(http_client_auth, authorization, mocker):
+    mock_keycloak_admin = mocker.patch("src.utils.deps.get_keycloak_admin")
+    mock_keycloak_instance = mock_keycloak_admin.return_value
+
+    mock_keycloak_instance.set_user_password.side_effect = exceptions.KeycloakPutError(
+        response_code=status.HTTP_400_BAD_REQUEST, error_message="Change user password failed"
+    )
+
+    user_id = "0123456"
+    payload = {"password": "change-password"}
+
+    response = http_client_auth.put(
+        f"/api/auth/change-password/{user_id}", json=payload, headers=authorization
+    )
+    mock_keycloak_instance.set_user_password.assert_called_once_with(
+        user_id=user_id,
+        password=payload["password"],
+        temporary=True
+    )
+    mock_keycloak_instance.set_user_password.assert_called_once()
+
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+    assert response.json() == {"detail": "400: Change user password failed"}
 
 
 def test_delete_user_success(http_client_auth, authorization, mocker):
@@ -148,9 +249,9 @@ def test_delete_user_success(http_client_auth, authorization, mocker):
     response = http_client_auth.delete(
         f"/api/auth/users/{user_id}", headers=authorization
     )
-
-    assert response.status_code == status.HTTP_200_OK
     mock_keycloak_instance.delete_user.assert_called_once_with(user_id=user_id)
+    mock_keycloak_instance.delete_user.assert_called_once()
+    assert response.status_code == status.HTTP_200_OK
 
 
 def test_delete_user_failure(http_client_auth, authorization, mocker):
@@ -167,10 +268,11 @@ def test_delete_user_failure(http_client_auth, authorization, mocker):
         f"/api/auth/users/{user_id}", headers=authorization
     )
 
+    mock_keycloak_instance.delete_user.assert_called_once_with(user_id=user_id)
+    mock_keycloak_instance.delete_user.assert_called_once()
+
     assert response.status_code == status.HTTP_404_NOT_FOUND
     assert response.json() == {"detail": "404: User not found"}
-
-    mock_keycloak_instance.delete_user.assert_called_once_with(user_id=user_id)
 
 
 def test_get_roles_of_user_success(http_client_auth, authorization, mocker):
@@ -595,7 +697,9 @@ def test_delete_group_success(http_client_auth, authorization, mocker):
     mock_keycloak_instance.delete_group.return_value = {"status": True}
 
     group_id = "012346"
-    response = http_client_auth.delete(f"/api/auth/groups/{group_id}", headers=authorization)
+    response = http_client_auth.delete(
+        f"/api/auth/groups/{group_id}", headers=authorization
+    )
 
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == {"status": True}
@@ -611,7 +715,9 @@ def test_delete_group_failure(http_client_auth, authorization, mocker):
     )
 
     group_id = "012346"
-    response = http_client_auth.delete(f"/api/auth/groups/{group_id}", headers=authorization)
+    response = http_client_auth.delete(
+        f"/api/auth/groups/{group_id}", headers=authorization
+    )
     assert response.status_code == status.HTTP_404_NOT_FOUND
     assert response.json() == {"detail": "404: Group not Found"}
 
@@ -691,7 +797,9 @@ def test_get_role_failure(http_client_auth, authorization, mocker):
     )
 
     role_name = "admin"
-    response = http_client_auth.get(f"/api/auth/roles/{role_name}", headers=authorization)
+    response = http_client_auth.get(
+        f"/api/auth/roles/{role_name}", headers=authorization
+    )
 
     assert response.status_code == status.HTTP_404_NOT_FOUND
     assert response.json() == {"detail": "404: Role name not found"}
@@ -716,8 +824,7 @@ def test_update_role_success(http_client_auth, authorization, mocker):
 
     assert response.status_code == status.HTTP_200_OK
     mock_keycloak_instance.update_realm_role.assert_called_once_with(
-        role_name=role_name,
-        payload=role_payload
+        role_name=role_name, payload=role_payload
     )
 
 
@@ -752,23 +859,31 @@ def test_delete_role_success(http_client_auth, authorization, mocker):
     mock_keycloak_instance.delete_realm_role.return_value = {"status": True}
 
     role_name = "example_role_name"
-    response = http_client_auth.delete(f"/api/auth/roles/{role_name}", headers=authorization)
+    response = http_client_auth.delete(
+        f"/api/auth/roles/{role_name}", headers=authorization
+    )
 
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == {"status": True}
 
-    mock_keycloak_instance.delete_realm_role.assert_called_once_with(role_name=role_name)
+    mock_keycloak_instance.delete_realm_role.assert_called_once_with(
+        role_name=role_name
+    )
 
 
 def test_delete_role_failure(http_client_auth, authorization, mocker):
     mock_keycloak_admin = mocker.patch("src.utils.deps.get_keycloak_admin")
     mock_keycloak_instance = mock_keycloak_admin.return_value
-    mock_keycloak_instance.delete_realm_role.side_effect = exceptions.KeycloakDeleteError(
-        response_code=status.HTTP_404_NOT_FOUND, error_message="Role not Found"
+    mock_keycloak_instance.delete_realm_role.side_effect = (
+        exceptions.KeycloakDeleteError(
+            response_code=status.HTTP_404_NOT_FOUND, error_message="Role not Found"
+        )
     )
 
     role_name = "example_role_name"
-    response = http_client_auth.delete(f"/api/auth/roles/{role_name}", headers=authorization)
+    response = http_client_auth.delete(
+        f"/api/auth/roles/{role_name}", headers=authorization
+    )
     assert response.status_code == status.HTTP_404_NOT_FOUND
     assert response.json() == {"detail": "404: Role not Found"}
 
@@ -778,12 +893,24 @@ def test_logout_user(http_client_auth, authorization, mocker):
     mock_keycloak_logout.return_value = {"message": "Logout successful"}
 
     response = http_client_auth.post(
-        "/api/auth/logout",
-        json={"refresh_token": "1235647"},
-        headers=authorization
+        "/api/auth/logout", json={"refresh_token": "1235647"}, headers=authorization
     )
 
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == {"message": "Logout successful"}
     mock_keycloak_logout.assert_called_once()
     mock_keycloak_logout.assert_called_once_with("1235647")
+
+
+def test_refresh_token(http_client_auth, authorization, mocker):
+    mock_refresh_token = mocker.patch("src.utils.deps.user_refresh_token")
+    mock_refresh_token.return_value = {"message": "Refresh Token successful"}
+
+    response = http_client_auth.post(
+        "/api/auth/refresh-token", json={"refresh_token": "01235647"}, headers=authorization
+    )
+
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json() == {"message": "Refresh Token successful"}
+    mock_refresh_token.assert_called_once()
+    mock_refresh_token.assert_called_once_with("01235647")

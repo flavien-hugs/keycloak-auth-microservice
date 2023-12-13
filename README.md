@@ -45,14 +45,14 @@ poetry run coverage report -m
 
 | Endpoint              | Description                    |
 |-----------------------|--------------------------------|
-| GET `/api/auth/@ping`     | Test if server running         |
-| POST `/api/auth/create`    | Register a new user            |
-| POST `/api/auth/login`     | Authenticate and obtain a token|
-| POSt `/api/auth/logout`     | Logout the currently authenticated user |
+| GET `/api/auth/@ping`     | Test if server running |
+| POST `/api/auth/login`    | Authenticate and obtain a token |
 | GET `/api/auth/users`     | Get all users |
-| GET `/api/auth/users/{user_id}`| Get user profile information   |
-| DELETE `/api/auth/users/{user_id}`| Delete user   |
-| PATCH `/api/auth/users/{user_id}`| Update user information   |
+| POST `/api/auth/users`    | Create new user |
+| POSt `/api/auth/logout`   | Logout the currently authenticated user |
+| GET `/api/auth/users/{user_id}`| Get user profile information |
+| DELETE `/api/auth/users/{user_id}`| Delete user |
+| PATCH `/api/auth/users/{user_id}`| Update user information |
 
 Feel free to explore and extend the functionality by adding more routes and features to suit your authentication needs.
 

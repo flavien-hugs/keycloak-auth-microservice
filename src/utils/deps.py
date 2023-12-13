@@ -71,6 +71,16 @@ def user_logout(refresh_token: str) -> dict[str, str]:
     return token
 
 
+def user_refresh_token(refresh_token: str) -> dict[str, str]:
+    try:
+        token = get_keycloak_openid().refresh_token(refresh_token)
+    except exceptions.KeycloakInvalidTokenError as err:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail=str(err)
+        ) from err
+    return token
+
+
 class AuthTokenBearer(HTTPBearer):
     async def validate_token(self, token: str):
         token_info = get_keycloak_openid().introspect(token)
