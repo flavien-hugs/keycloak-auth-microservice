@@ -28,7 +28,9 @@ def test_get_keycloak_openid_failure(mock_keycloak_open_id, mocker):
     from src.config.keycloak import settings as keycloak_env
 
     mock_instance = mock_keycloak_open_id.return_value
-    mock_instance.well_known.side_effect = exceptions.KeycloakConnectionError("Connection error")
+    mock_instance.well_known.side_effect = exceptions.KeycloakConnectionError(
+        "Connection error"
+    )
 
     with pytest.raises(HTTPException) as exc_info:
         get_keycloak_openid()
@@ -48,6 +50,7 @@ def test_get_keycloak_openid_failure(mock_keycloak_open_id, mocker):
 
 def test_get_keycloak_admin_success(mocker):
     from src.utils.deps import get_keycloak_admin
+
     mock_keycloak_conn = mocker.patch("src.utils.deps.KeycloakOpenIDConnection")
     mock_keycloak_admin = mocker.patch("src.utils.deps.KeycloakAdmin")
 
@@ -60,9 +63,12 @@ def test_get_keycloak_admin_success(mocker):
 
 def test_get_keycloak_admin_failure(mocker):
     from src.utils.deps import get_keycloak_admin
+
     mock_keycloak_conn = mocker.patch("src.utils.deps.KeycloakOpenIDConnection")
 
-    mock_keycloak_conn.side_effect = exceptions.KeycloakConnectionError("Connection failed")
+    mock_keycloak_conn.side_effect = exceptions.KeycloakConnectionError(
+        "Connection failed"
+    )
 
     with pytest.raises(HTTPException) as exc_info:
         get_keycloak_admin()
@@ -139,8 +145,11 @@ def test_user_logout_success(mock_keycloak_openid_conn):
 @mock.patch("src.utils.deps.KeycloakOpenID")
 def test_user_logout_failure(mock_keycloak_openid_conn):
     from src.utils.deps import user_logout
+
     mock_openid_instance = mock_keycloak_openid_conn.return_value
-    mock_openid_instance.logout.side_effect = exceptions.KeycloakInvalidTokenError("Invalid token")
+    mock_openid_instance.logout.side_effect = exceptions.KeycloakInvalidTokenError(
+        "Invalid token"
+    )
 
     mock_token = "0101010101"
 
@@ -208,14 +217,79 @@ async def test_authorization_bearer_expired_token(
     )
 
 
-@pytest.mark.parametrize("token_info, expected_result", [
-    ({"active": True, "groups": ["group1", "group2"]}, True),
-    ({"active": True, "groups": ["group3", "group4"]}, False),
-    ({"active": False}, False),
-    ({"active": True}, False),
-])
+@pytest.mark.parametrize(
+    "token_info, expected_result",
+    [
+        ({"active": True, "groups": ["group1", "group2"]}, True),
+        ({"active": True, "groups": ["group3", "group4"]}, False),
+        ({"active": False}, False),
+        ({"active": True}, False),
+    ],
+)
 def test_check_group(token_info, expected_result, mocker):
     from src.utils.deps import check_group
-    mocker.patch("src.utils.deps.get_keycloak_openid", return_value=mock.MagicMock(userinfo=lambda token: token_info))
+
+    mocker.patch(
+        "src.utils.deps.get_keycloak_openid",
+        return_value=mock.MagicMock(userinfo=lambda token: token_info),
+    )
+    result = check_group("fake_token", "group1")
+    assert result == expected_result
+
+
+@mock.patch("src.utils.deps.KeycloakOpenID")
+def test_user_refresh_token_success(mock_keycloak_openid_conn):
+    from src.utils.deps import user_refresh_token
+
+    mock_openid_instance = mock_keycloak_openid_conn.return_value
+
+    mock_token = "01234566"
+    expected_result = {"message": "Logout successful"}
+    mock_openid_instance.refresh_token.return_value = expected_result
+
+    result = user_refresh_token(mock_token)
+
+    mock_keycloak_openid_conn.assert_called_once()
+    mock_openid_instance.refresh_token.assert_called_once_with(mock_token)
+    assert result == expected_result
+
+
+@mock.patch("src.utils.deps.KeycloakOpenID")
+def test_user_refresh_token_failure(mock_keycloak_openid_conn):
+    from src.utils.deps import user_refresh_token
+
+    mock_openid_instance = mock_keycloak_openid_conn.return_value
+    mock_openid_instance.refresh_token.side_effect = (
+        exceptions.KeycloakInvalidTokenError("Invalid token")
+    )
+
+    mock_token = "0101010101"
+
+    with pytest.raises(HTTPException) as e:
+        user_refresh_token(mock_token)
+
+    assert e.value.status_code == status.HTTP_400_BAD_REQUEST
+    assert str(e.value.detail) == "Invalid token"
+
+    mock_keycloak_openid_conn.assert_called_once()
+    mock_openid_instance.refresh_token.assert_called_once_with(mock_token)
+
+
+@pytest.mark.parametrize(
+    "token_info, expected_result",
+    [
+        ({"active": True, "groups": ["group1", "group2"]}, True),
+        ({"active": True, "groups": ["group3", "group4"]}, False),
+        ({"active": False}, False),
+        ({"active": True}, False),
+    ],
+)
+def test_check_group(token_info, expected_result, mocker):
+    from src.utils.deps import check_group
+
+    mocker.patch(
+        "src.utils.deps.get_keycloak_openid",
+        return_value=mock.MagicMock(userinfo=lambda token: token_info),
+    )
     result = check_group("fake_token", "group1")
     assert result == expected_result

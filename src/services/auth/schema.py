@@ -1,12 +1,16 @@
 from typing import Optional
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
 
 
-class AuthModel(BaseModel):
+class UserBaseModel(BaseModel):
+    lastname: Optional[str] = None
+    firstname: Optional[str] = None
+    email: Optional[EmailStr] = None
+
+
+class UserModel(UserBaseModel):
     username: str
     password: str
-    firstname: Optional[str] = None
-    lastname: Optional[str] = None
 
 
 class LoginModel(BaseModel):
@@ -36,3 +40,7 @@ class GroupSchemaBase(BaseModel):
 
 class LogoutUser(BaseModel):
     refresh_token: str
+
+
+class ChangePasswordUser(BaseModel):
+    password: str

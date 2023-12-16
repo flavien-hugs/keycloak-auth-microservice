@@ -4,7 +4,7 @@ from src.services import router_factory
 from src.services.auth import schema
 from src.utils import deps
 
-from keycloak import KeycloakAdmin, exceptions
+from keycloak import exceptions
 
 router = router_factory(
     prefix="/api/auth",
@@ -25,9 +25,10 @@ def login(payload: schema.LoginModel = Body(...)):
 
 
 @router.post("/users", summary="Create new user")
-async def create_user(data: schema.AuthModel = Body(...)):
+async def create_user(data: schema.UserModel = Body(...)):
     try:
         payload = {
+            "email": data.email,
             "username": data.username,
             "firstName": data.firstname,
             "lastName": data.lastname,
@@ -64,6 +65,40 @@ async def get_users():
     users = deps.get_keycloak_admin().get_users({})
     data = [user for user in users]
     return data
+
+
+@router.patch(
+    "/users/{user_id}",
+    dependencies=[Security(deps.get_current_user)],
+    summary="Update user information",
+)
+def update_user(user_id: str, payload: schema.UserBaseModel = Body(...)):
+    try:
+        update_data = {
+            "email": payload.email,
+            "lastName": payload.lastname,
+            "firstName": payload.firstname,
+        }
+        keycloak_admin = deps.get_keycloak_admin()
+        response = keycloak_admin.update_user(user_id=user_id, payload=update_data)
+    except exceptions.KeycloakPutError as err:
+        raise HTTPException(status_code=err.response_code, detail=str(err)) from err
+    return response
+
+
+@router.put(
+    "/change-password/{user_id}",
+    dependencies=[Security(deps.get_current_user)],
+    summary="Update User Password",
+)
+def update_user_passwaord(user_id: str, payload: schema.ChangePasswordUser = Body(...)):
+    try:
+        response = deps.get_keycloak_admin().set_user_password(
+            user_id=user_id, password=payload.password, temporary=True
+        )
+    except exceptions.KeycloakPutError as err:
+        raise HTTPException(status_code=err.response_code, detail=str(err)) from err
+    return response
 
 
 @router.delete(

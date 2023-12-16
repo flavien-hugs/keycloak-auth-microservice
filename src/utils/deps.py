@@ -71,26 +71,39 @@ def user_logout(refresh_token: str) -> dict[str, str]:
     return token
 
 
+def user_refresh_token(refresh_token: str) -> dict[str, str]:
+    try:
+        token = get_keycloak_openid().refresh_token(refresh_token)
+    except exceptions.KeycloakInvalidTokenError as err:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail=str(err)
+        ) from err
+    return token
+
+
 class AuthTokenBearer(HTTPBearer):
     async def validate_token(self, token: str):
-        token_info = get_keycloak_openid().introspect(token)
-        if not token_info["active"]:
+        if not (get_keycloak_openid().introspect(token))["active"]:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="The access token is expired",
             )
 
     async def __call__(self, request: Request):
-        auth = await super().__call__(request=request)
+        if auth := await super().__call__(request=request):
+            if not auth.scheme.lower() == "bearer":
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Schéma d'authentification non valide.",
+                )
 
-        if not auth.credentials:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="An access token is expected but has not been provided",
-            )
+            await self.validate_token(auth.credentials)
+            return auth.credentials
 
-        await self.validate_token(auth.credentials)
-        return auth.credentials
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="An access token is expected but has not been provided",
+        )
 
 
 get_current_user = AuthTokenBearer()
