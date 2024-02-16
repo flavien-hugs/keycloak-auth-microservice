@@ -3,14 +3,6 @@ from fastapi import status
 from keycloak import exceptions
 
 
-def test_ping(http_client_auth):
-    response = http_client_auth.get("/api/auth/@ping")
-    assert response.status_code == status.HTTP_200_OK
-    response_json = response.json()
-    assert "msg" in response_json
-    assert response_json == {"msg": "pong !"}
-
-
 def test_login_success(http_client_auth, mocker):
     mock_keycloak_openid = mocker.patch("src.utils.deps.KeycloakOpenID")
     mock_keycloak_open_con = mocker.patch("src.utils.deps.KeycloakOpenIDConnection")
@@ -49,8 +41,8 @@ def test_create_user_success(http_client_auth, mocker):
         "password": "password",
     }
 
-    response = http_client_auth.post("/api/auth/users", json=payload)
-    assert response.status_code == status.HTTP_200_OK
+    response = http_client_auth.post("/api/users", json=payload)
+    assert response.status_code == status.HTTP_201_CREATED
     mock_keycloak_instance.create_user.assert_called_once_with(
         {
             "username": "john",
@@ -86,7 +78,7 @@ def test_create_user_failure(http_client_auth, mocker):
         response_code=status.HTTP_400_BAD_REQUEST, error_message="User creation failed"
     )
 
-    response = http_client_auth.post("/api/auth/users", json=payload)
+    response = http_client_auth.post("/api/users", json=payload)
 
     assert response.status_code == status.HTTP_400_BAD_REQUEST
     assert response.json() == {"detail": "400: User creation failed"}
@@ -110,7 +102,7 @@ def test_create_user_failure(http_client_auth, mocker):
 def test_get_users(http_client_auth, authorization, mocker):
     mock_keycloak_admin = mocker.patch("src.utils.deps.get_keycloak_admin")
     mock_keycloak_admin.get_users.return_value = mock.MagicMock()
-    response = http_client_auth.get("/api/auth/users", headers=authorization)
+    response = http_client_auth.get("/api/users", headers=authorization)
     assert response.status_code == 200
     assert response.json() == []
 
@@ -123,7 +115,7 @@ def test_update_user_success(http_client_auth, authorization, mocker):
 
     user_id = "0123456"
     response = http_client_auth.patch(
-        f"/api/auth/users/{user_id}", json=payload, headers=authorization
+        f"/api/users/{user_id}", json=payload, headers=authorization
     )
 
     mock_keycloak_instance.update_user.assert_called_once_with(
@@ -131,7 +123,7 @@ def test_update_user_success(http_client_auth, authorization, mocker):
         payload={
             "lastName": payload["lastname"],
             "firstName": payload["firstname"],
-            "email": payload["email"]
+            "email": payload["email"],
         },
     )
     mock_keycloak_instance.update_user.assert_called_once()
@@ -150,7 +142,7 @@ def test_update_user_failure(http_client_auth, authorization, mocker):
     payload = {"lastname": "Wick", "firstname": "Hugs", "email": "flavien@pm.me"}
 
     response = http_client_auth.patch(
-        f"/api/auth/users/{user_id}", json=payload, headers=authorization
+        f"/api/users/{user_id}", json=payload, headers=authorization
     )
     assert response.status_code == status.HTTP_400_BAD_REQUEST
     assert response.json() == {"detail": "400: User update failed"}
@@ -160,8 +152,8 @@ def test_update_user_failure(http_client_auth, authorization, mocker):
         payload={
             "lastName": payload["lastname"],
             "firstName": payload["firstname"],
-            "email": payload["email"]
-        }
+            "email": payload["email"],
+        },
     )
     mock_keycloak_instance.get_user.assert_not_called()
 
@@ -172,7 +164,7 @@ def test_get_user_success(http_client_auth, authorization, mocker):
     mock_user = mock.MagicMock()
     mock_keycloak_instance.get_user.return_value = mock_user
 
-    response = http_client_auth.get("/api/auth/users/0123", headers=authorization)
+    response = http_client_auth.get("/api/users/0123", headers=authorization)
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == {}
 
@@ -187,7 +179,7 @@ def test_get_user_failure(http_client_auth, authorization, mocker):
         response_code=status.HTTP_404_NOT_FOUND, error_message="User not found"
     )
 
-    response = http_client_auth.get("/api/auth/users/0123", headers=authorization)
+    response = http_client_auth.get("/api/users/0123", headers=authorization)
 
     assert response.status_code == status.HTTP_404_NOT_FOUND
     assert response.json() == {"detail": "404: User not found"}
@@ -200,9 +192,7 @@ def test_delete_user_success(http_client_auth, authorization, mocker):
     mock_keycloak_instance = mock_keycloak_admin.return_value
 
     user_id = "0123456"
-    response = http_client_auth.delete(
-        f"/api/auth/users/{user_id}", headers=authorization
-    )
+    response = http_client_auth.delete(f"/api/users/{user_id}", headers=authorization)
 
     assert response.status_code == status.HTTP_200_OK
     mock_keycloak_instance.delete_user.assert_called_once_with(user_id=user_id)
@@ -218,9 +208,7 @@ def test_delete_user_failure(http_client_auth, authorization, mocker):
         response_code=status.HTTP_404_NOT_FOUND, error_message="User not found"
     )
 
-    response = http_client_auth.delete(
-        f"/api/auth/users/{user_id}", headers=authorization
-    )
+    response = http_client_auth.delete(f"/api/users/{user_id}", headers=authorization)
 
     assert response.status_code == status.HTTP_404_NOT_FOUND
     assert response.json() == {"detail": "404: User not found"}
@@ -235,7 +223,7 @@ def test_get_roles_of_user_success(http_client_auth, authorization, mocker):
 
     user_id = "0123456"
     response = http_client_auth.get(
-        f"/api/auth/users/{user_id}/roles", headers=authorization
+        f"/api/users/{user_id}/roles", headers=authorization
     )
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == ["role1", "role2"]
@@ -256,7 +244,7 @@ def test_get_roles_of_user_failure(http_client_auth, authorization, mocker):
 
     user_id = "0123456"
     response = http_client_auth.get(
-        f"/api/auth/users/{user_id}/roles", headers=authorization
+        f"/api/users/{user_id}/roles", headers=authorization
     )
 
     assert response.status_code == status.HTTP_404_NOT_FOUND
@@ -274,7 +262,7 @@ def test_get_groups_of_user_success(http_client_auth, authorization, mocker):
 
     user_id = "0123456"
     response = http_client_auth.get(
-        f"/api/auth/users/{user_id}/groups", headers=authorization
+        f"/api/users/{user_id}/groups", headers=authorization
     )
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == {}
@@ -291,7 +279,7 @@ def test_get_groups_of_user_failure(http_client_auth, authorization, mocker):
 
     user_id = "0123456"
     response = http_client_auth.get(
-        f"/api/auth/users/{user_id}/groups", headers=authorization
+        f"/api/users/{user_id}/groups", headers=authorization
     )
 
     assert response.status_code == status.HTTP_404_NOT_FOUND
@@ -307,7 +295,7 @@ def test_remove_role_to_user_success(http_client_auth, authorization, mocker):
     user_id = "0123456"
     roles_payload = {"roles": ["role1", "role2"]}
     response = http_client_auth.put(
-        f"/api/auth/users/{user_id}/remove-roles",
+        f"/api/users/{user_id}/remove-roles",
         json=roles_payload,
         headers=authorization,
     )
@@ -331,7 +319,7 @@ def test_remove_role_to_user_failure(http_client_auth, authorization, mocker):
     user_id = "0123456"
     roles_payload = {"roles": ["role1", "role2"]}
     response = http_client_auth.put(
-        f"/api/auth/users/{user_id}/remove-roles",
+        f"/api/users/{user_id}/remove-roles",
         json=roles_payload,
         headers=authorization,
     )
@@ -352,7 +340,7 @@ def test_assign_role_to_user_success(http_client_auth, authorization, mocker):
     user_id = "0123456"
     roles_payload = {"roles": ["role1", "role2"]}
     response = http_client_auth.put(
-        f"/api/auth/users/{user_id}/assign-roles",
+        f"/api/users/{user_id}/assign-roles",
         json=roles_payload,
         headers=authorization,
     )
@@ -372,7 +360,7 @@ def test_assign_role_to_user_failure(http_client_auth, authorization, mocker):
     user_id = "0123456"
     roles_payload = {"roles": ["role1", "role2"]}
     response = http_client_auth.put(
-        f"/api/auth/users/{user_id}/assign-roles",
+        f"/api/users/{user_id}/assign-roles",
         json=roles_payload,
         headers=authorization,
     )
@@ -393,8 +381,9 @@ def test_assign_group_to_user_success(http_client_auth, authorization, mocker):
     group_id = "0123456789"
 
     response = http_client_auth.put(
-        f"/api/auth/users/{user_id}/assign-group/{group_id}", headers=authorization
+        f"/api/users/{user_id}/assign-group/{group_id}", headers=authorization
     )
+
     assert response.status_code == status.HTTP_200_OK
     mock_keycloak_instance.group_user_add.assert_called_once_with(
         user_id=user_id, group_id=group_id
@@ -413,7 +402,7 @@ def test_assign_group_to_user_failure(http_client_auth, authorization, mocker):
     group_id = "0123456789"
 
     response = http_client_auth.put(
-        f"/api/auth/users/{user_id}/assign-group/{group_id}", headers=authorization
+        f"/api/users/{user_id}/assign-group/{group_id}", headers=authorization
     )
     assert response.status_code == status.HTTP_400_BAD_REQUEST
     mock_keycloak_instance.group_user_add.assert_called_once_with(
@@ -429,7 +418,7 @@ def test_group_user_remove_success(http_client_auth, authorization, mocker):
     group_id = "0123456789"
 
     response = http_client_auth.put(
-        f"/api/auth/users/{user_id}/remove-group/{group_id}", headers=authorization
+        f"/api/users/{user_id}/remove-group/{group_id}", headers=authorization
     )
     assert response.status_code == status.HTTP_200_OK
     mock_keycloak_instance.group_user_remove.assert_called_once_with(
@@ -448,7 +437,7 @@ def test_group_user_remove_failure(http_client_auth, authorization, mocker):
     group_id = "0123456789"
 
     response = http_client_auth.put(
-        f"/api/auth/users/{user_id}/remove-group/{group_id}", headers=authorization
+        f"/api/users/{user_id}/remove-group/{group_id}", headers=authorization
     )
     assert response.status_code == status.HTTP_400_BAD_REQUEST
     mock_keycloak_instance.group_user_remove.assert_called_once_with(
@@ -461,10 +450,8 @@ def test_create_group_success(http_client_auth, authorization, mocker):
     mock_keycloak_instance = mock_keycloak_admin.return_value
 
     payload = {"name": "group_name", "subGroups": []}
-    response = http_client_auth.post(
-        "/api/auth/groups", json=payload, headers=authorization
-    )
-    assert response.status_code == status.HTTP_200_OK
+    response = http_client_auth.post("/api/groups", json=payload, headers=authorization)
+    assert response.status_code == status.HTTP_201_CREATED
 
     mock_keycloak_instance.create_group.assert_called_once_with(payload=payload)
     mock_keycloak_instance.get_group.assert_called_once_with(
@@ -482,9 +469,7 @@ def test_create_group_failure(http_client_auth, authorization, mocker):
 
     payload = {"name": "group_name", "subGroups": []}
 
-    response = http_client_auth.post(
-        "/api/auth/groups", json=payload, headers=authorization
-    )
+    response = http_client_auth.post("/api/groups", json=payload, headers=authorization)
 
     assert response.status_code == status.HTTP_400_BAD_REQUEST
     assert response.json() == {"detail": "400: Group creation failed"}
@@ -496,7 +481,7 @@ def test_create_group_failure(http_client_auth, authorization, mocker):
 def test_get_groups(http_client_auth, authorization, mocker):
     mock_keycloak_admin = mocker.patch("src.utils.deps.get_keycloak_admin")
     mock_keycloak_admin.get_groups.return_value = mock.MagicMock()
-    response = http_client_auth.get("/api/auth/groups", headers=authorization)
+    response = http_client_auth.get("/api/groups", headers=authorization)
     assert response.status_code == 200
     assert response.json() == {}
 
@@ -506,7 +491,7 @@ def test_get_group_success(http_client_auth, authorization, mocker):
     mock_keycloak_instance = mock_keycloak_admin.return_value
     mock_keycloak_instance.get_group.return_value = "010101"
 
-    response = http_client_auth.get("/api/auth/groups/010101", headers=authorization)
+    response = http_client_auth.get("/api/groups/010101", headers=authorization)
     assert response.status_code == status.HTTP_200_OK
 
     mock_keycloak_instance.get_group.assert_called_once_with(group_id="010101")
@@ -520,7 +505,7 @@ def test_get_group_failure(http_client_auth, authorization, mocker):
         response_code=status.HTTP_404_NOT_FOUND, error_message="Group not found"
     )
 
-    response = http_client_auth.get("/api/auth/groups/0123456", headers=authorization)
+    response = http_client_auth.get("/api/groups/0123456", headers=authorization)
 
     assert response.status_code == status.HTTP_404_NOT_FOUND
     assert response.json() == {"detail": "404: Group not found"}
@@ -535,7 +520,7 @@ def test_get_group_realm_roles_success(http_client_auth, authorization, mocker):
     group_id = "0123456789"
 
     response = http_client_auth.get(
-        f"/api/auth/groups/{group_id}/roles", headers=authorization
+        f"/api/groups/{group_id}/roles", headers=authorization
     )
     assert response.status_code == status.HTTP_200_OK
     mock_keycloak_instance.get_group_realm_roles.assert_called_once_with(
@@ -555,7 +540,7 @@ def test_get_group_realm_roles_failure(http_client_auth, authorization, mocker):
 
     group_id = "0123456"
     response = http_client_auth.get(
-        f"/api/auth/groups/{group_id}/roles", headers=authorization
+        f"/api/groups/{group_id}/roles", headers=authorization
     )
 
     assert response.status_code == status.HTTP_404_NOT_FOUND
@@ -574,7 +559,7 @@ def test_assign_group_realm_roles_success(http_client_auth, authorization, mocke
     roles_payload = {"roles": ["role1", "role2"]}
 
     response = http_client_auth.put(
-        f"/api/auth/groups/{group_id}/assign-roles",
+        f"/api/groups/{group_id}/assign-roles",
         json=roles_payload,
         headers=authorization,
     )
@@ -598,7 +583,7 @@ def test_assign_group_realm_roles_failure(http_client_auth, authorization, mocke
     roles_payload = {"roles": ["role1", "role2"]}
 
     response = http_client_auth.put(
-        f"/api/auth/groups/{group_id}/assign-roles",
+        f"/api/groups/{group_id}/assign-roles",
         json=roles_payload,
         headers=authorization,
     )
@@ -615,7 +600,7 @@ def test_update_group_success(http_client_auth, authorization, mocker):
     group_id = "0123456"
     payload = {"name": "new group name", "subGroups": []}
     response = http_client_auth.put(
-        f"/api/auth/groups/{group_id}", json=payload, headers=authorization
+        f"/api/groups/{group_id}", json=payload, headers=authorization
     )
 
     assert response.status_code == status.HTTP_200_OK
@@ -634,7 +619,7 @@ def test_update_group_failure(http_client_auth, authorization, mocker):
     group_id = "0123456"
     payload = {"name": "new group name", "subGroups": []}
     response = http_client_auth.put(
-        f"/api/auth/groups/{group_id}", json=payload, headers=authorization
+        f"/api/groups/{group_id}", json=payload, headers=authorization
     )
 
     assert response.status_code == status.HTTP_400_BAD_REQUEST
@@ -650,9 +635,7 @@ def test_delete_group_success(http_client_auth, authorization, mocker):
     mock_keycloak_instance.delete_group.return_value = {"status": True}
 
     group_id = "012346"
-    response = http_client_auth.delete(
-        f"/api/auth/groups/{group_id}", headers=authorization
-    )
+    response = http_client_auth.delete(f"/api/groups/{group_id}", headers=authorization)
 
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == {"status": True}
@@ -668,9 +651,7 @@ def test_delete_group_failure(http_client_auth, authorization, mocker):
     )
 
     group_id = "012346"
-    response = http_client_auth.delete(
-        f"/api/auth/groups/{group_id}", headers=authorization
-    )
+    response = http_client_auth.delete(f"/api/groups/{group_id}", headers=authorization)
     assert response.status_code == status.HTTP_404_NOT_FOUND
     assert response.json() == {"detail": "404: Group not Found"}
 
@@ -685,10 +666,8 @@ def test_create_roles_success(http_client_auth, authorization, mocker):
         "composite": False,
         "clientRole": False,
     }
-    response = http_client_auth.post(
-        "/api/auth/roles", json=payload, headers=authorization
-    )
-    assert response.status_code == status.HTTP_200_OK
+    response = http_client_auth.post("/api/roles", json=payload, headers=authorization)
+    assert response.status_code == status.HTTP_201_CREATED
 
     mock_keycloak_instance.create_realm_role.assert_called_once_with(payload=payload)
     mock_keycloak_instance.get_realm_role.assert_called_once_with(
@@ -711,9 +690,7 @@ def test_create_roles_failure(http_client_auth, authorization, mocker):
         "clientRole": False,
     }
 
-    response = http_client_auth.post(
-        "/api/auth/roles", json=payload, headers=authorization
-    )
+    response = http_client_auth.post("/api/roles", json=payload, headers=authorization)
 
     assert response.status_code == status.HTTP_400_BAD_REQUEST
     assert response.json() == {"detail": "400: Role creation failed"}
@@ -725,7 +702,7 @@ def test_create_roles_failure(http_client_auth, authorization, mocker):
 def test_get_roles(http_client_auth, authorization, mocker):
     mock_keycloak_admin = mocker.patch("src.utils.deps.get_keycloak_admin")
     mock_keycloak_admin.get_realm_roles.return_value = mock.MagicMock()
-    response = http_client_auth.get("/api/auth/roles", headers=authorization)
+    response = http_client_auth.get("/api/roles", headers=authorization)
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == {}
 
@@ -735,7 +712,7 @@ def test_get_role_success(http_client_auth, authorization, mocker):
     mock_keycloak_instance = mock_keycloak_admin.return_value
     mock_keycloak_instance.get_realm_role.return_value = "admin"
 
-    response = http_client_auth.get("/api/auth/roles/admin", headers=authorization)
+    response = http_client_auth.get("/api/roles/admin", headers=authorization)
     assert response.status_code == status.HTTP_200_OK
 
     mock_keycloak_instance.get_realm_role.assert_called_once_with(role_name="admin")
@@ -750,9 +727,7 @@ def test_get_role_failure(http_client_auth, authorization, mocker):
     )
 
     role_name = "admin"
-    response = http_client_auth.get(
-        f"/api/auth/roles/{role_name}", headers=authorization
-    )
+    response = http_client_auth.get(f"/api/roles/{role_name}", headers=authorization)
 
     assert response.status_code == status.HTTP_404_NOT_FOUND
     assert response.json() == {"detail": "404: Role name not found"}
@@ -772,7 +747,7 @@ def test_update_role_success(http_client_auth, authorization, mocker):
         "clientRole": False,
     }
     response = http_client_auth.put(
-        f"/api/auth/roles/{role_name}", json=role_payload, headers=authorization
+        f"/api/roles/{role_name}", json=role_payload, headers=authorization
     )
 
     assert response.status_code == status.HTTP_200_OK
@@ -796,7 +771,7 @@ def test_update_role_failure(http_client_auth, authorization, mocker):
         "clientRole": False,
     }
     response = http_client_auth.put(
-        f"/api/auth/roles/{role_name}", json=role_payload, headers=authorization
+        f"/api/roles/{role_name}", json=role_payload, headers=authorization
     )
 
     assert response.status_code == status.HTTP_400_BAD_REQUEST
@@ -812,9 +787,7 @@ def test_delete_role_success(http_client_auth, authorization, mocker):
     mock_keycloak_instance.delete_realm_role.return_value = {"status": True}
 
     role_name = "example_role_name"
-    response = http_client_auth.delete(
-        f"/api/auth/roles/{role_name}", headers=authorization
-    )
+    response = http_client_auth.delete(f"/api/roles/{role_name}", headers=authorization)
 
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == {"status": True}
@@ -834,9 +807,7 @@ def test_delete_role_failure(http_client_auth, authorization, mocker):
     )
 
     role_name = "example_role_name"
-    response = http_client_auth.delete(
-        f"/api/auth/roles/{role_name}", headers=authorization
-    )
+    response = http_client_auth.delete(f"/api/roles/{role_name}", headers=authorization)
     assert response.status_code == status.HTTP_404_NOT_FOUND
     assert response.json() == {"detail": "404: Role not Found"}
 
@@ -867,9 +838,7 @@ def test_update_user_passwaord_success(http_client_auth, authorization, mocker):
     )
 
     mock_keycloak_instance.set_user_password.assert_called_once_with(
-        user_id=user_id,
-        password=payload["password"],
-        temporary=True
+        user_id=user_id, password=payload["password"], temporary=True
     )
     mock_keycloak_instance.set_user_password.assert_called_once()
     assert response.status_code == status.HTTP_200_OK
@@ -880,7 +849,8 @@ def test_update_user_passwaord_failure(http_client_auth, authorization, mocker):
     mock_keycloak_instance = mock_keycloak_admin.return_value
 
     mock_keycloak_instance.set_user_password.side_effect = exceptions.KeycloakPutError(
-        response_code=status.HTTP_400_BAD_REQUEST, error_message="Change user password failed"
+        response_code=status.HTTP_400_BAD_REQUEST,
+        error_message="Change user password failed",
     )
 
     user_id = "0123456"
@@ -890,9 +860,7 @@ def test_update_user_passwaord_failure(http_client_auth, authorization, mocker):
         f"/api/auth/change-password/{user_id}", json=payload, headers=authorization
     )
     mock_keycloak_instance.set_user_password.assert_called_once_with(
-        user_id=user_id,
-        password=payload["password"],
-        temporary=True
+        user_id=user_id, password=payload["password"], temporary=True
     )
     mock_keycloak_instance.set_user_password.assert_called_once()
 

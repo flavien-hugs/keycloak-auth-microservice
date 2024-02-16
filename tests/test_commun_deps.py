@@ -273,23 +273,3 @@ def test_user_refresh_token_failure(mock_keycloak_openid_conn):
 
     mock_keycloak_openid_conn.assert_called_once()
     mock_openid_instance.refresh_token.assert_called_once_with(mock_token)
-
-
-@pytest.mark.parametrize(
-    "token_info, expected_result",
-    [
-        ({"active": True, "groups": ["group1", "group2"]}, True),
-        ({"active": True, "groups": ["group3", "group4"]}, False),
-        ({"active": False}, False),
-        ({"active": True}, False),
-    ],
-)
-def test_check_group(token_info, expected_result, mocker):
-    from src.utils.deps import check_group
-
-    mocker.patch(
-        "src.utils.deps.get_keycloak_openid",
-        return_value=mock.MagicMock(userinfo=lambda token: token_info),
-    )
-    result = check_group("fake_token", "group1")
-    assert result == expected_result

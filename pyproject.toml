@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "keycloak-user-management"
 version = "0.1.0"
-description = ""
+description = "Authentification with Keycloak"
 packages = [{include = "src"}]
 authors = ["flavien-hugs <flavienhugs@pm.me>"]
 readme = "README.md"
@@ -30,5 +30,11 @@ requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.pytest.ini_options]
-env_override_existing_values = 1
 env_files = 'tests/.test.env'
+env_override_existing_values = 1
+python_files = "test_*.py"
+asyncio_mode = "auto"
+filterwarnings = [
+  "ignore",
+  "ignore:.*U.*mode is deprecated:DeprecationWarning"
+]

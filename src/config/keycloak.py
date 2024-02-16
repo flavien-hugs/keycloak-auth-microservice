@@ -1,5 +1,5 @@
 from pydantic import Field
-from src.config import APPBaseSettings
+from .base import APPBaseSettings
 
 
 class KeyCloakSettings(APPBaseSettings):

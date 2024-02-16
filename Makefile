@@ -11,7 +11,7 @@ help:	## Show this help
 
 .PHONY: run
 run: ## Run service
-	poetry run app auth runserver
+	poetry run app
 
 .PHONY: tests
 tests: ## Execute test

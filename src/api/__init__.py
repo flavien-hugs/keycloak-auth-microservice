@@ -1,5 +1,5 @@
-from src.services import AppAPI
-from src.services.auth import api
+from src import AppAPI
+from src.api import auth, users, groups, roles
 
 
 app = AppAPI(
@@ -7,7 +7,10 @@ app = AppAPI(
 )
 
 # add the routers
-app.include_router(api.router)
+app.include_router(auth.router)
+app.include_router(users.router)
+app.include_router(groups.router)
+app.include_router(roles.router)
 
 
 @app.get("/")

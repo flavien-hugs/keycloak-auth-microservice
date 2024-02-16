@@ -27,7 +27,7 @@ def authorization(mock_get_keycloak_openid):
 
 @pytest.fixture()
 def http_client_auth():
-    from src.services.auth import app
+    from src.api import app
 
     client = TestClient(app)
     return client
